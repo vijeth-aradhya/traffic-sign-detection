@@ -260,7 +260,7 @@ for row in data:
 	print(s1)
 	s2 = image_row[7]
 	print(s2)
-	with open('out.txt','w+') as f:
+	with open('out.txt','a') as f:
 		f.write(str(s1) + str(s2) + '\n')
 	f.close()
 
