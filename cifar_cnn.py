@@ -7,16 +7,19 @@ from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D
 import numpy as np
 import os
+import sys
+
 
 batch_size = 32
 num_classes = 43
 epochs = 100
 data_augmentation = True
-train_dir = './GTSRB/Training/'
-validation_dir = "./GTSRB/Validation/"
+train_dir = './GTSRB_Prev/Training/'
+validation_dir = "./GTSRB_Prev/Validation/"
 test_dir = "fill"
-num_train_images = 26145
-num_validation_images = 8053
+# num_train_images in ./GTSRB_Prev/Garbage = 2550
+num_train_images = 26146
+num_validation_images = 8054
 num_test_images = "fill"
 resize_dim = (100, 109)
 
@@ -48,7 +51,7 @@ opt = keras.optimizers.rmsprop(lr=0.0001, decay=1e-6)
 
 # Compile the model
 model.compile(loss='categorical_crossentropy',
-              optimizer=opt,
+              optimizer='rmsprop',
               metrics=['accuracy'])
 
 if not data_augmentation:
@@ -61,44 +64,60 @@ if not data_augmentation:
 else:
     print('Using real-time data augmentation.')
     # This will do preprocessing and realtime data augmentation:
-    datagen = ImageDataGenerator(featurewise_center=False,
-                                 samplewise_center=False,
-                                 featurewise_std_normalization=False,
-                                 samplewise_std_normalization=False,
-                                 zca_whitening=False,
-                                 zca_epsilon=1e-6,
-                                 rotation_range=0.,
-                                 width_shift_range=0.,
-                                 height_shift_range=0.,
-                                 shear_range=0.,
-                                 zoom_range=0.,
-                                 channel_shift_range=0.,
-                                 fill_mode='nearest',
-                                 cval=0.,
-                                 horizontal_flip=False,
-                                 vertical_flip=False,
-                                 rescale=None,
-                                 preprocessing_function=None,
-                                 data_format=K.image_data_format())
 
-    train_generator = datagen.flow_from_directory(
+    train_generator = ImageDataGenerator(data_format="channels_last").flow_from_directory(
         train_dir,
         target_size=(resize_dim[0], resize_dim[1]), # Dimensions to which all the images will be resized
-        batch_size=batch_size, # Default value
-        class_mode='categorical', # Not sure about this
-        shuffle=False, # Might help (causes problems if True, sometimes)
-        save_to_dir=None) # Saving to visualize the augmented images
+        batch_size=batch_size,
+        class_mode='categorical')
 
-    validation_generator = datagen.flow_from_directory(
+    print('\n')
+
+    print('batch_index: {0}'.format(train_generator.batch_index))
+    print('batch_size: {0}'.format(train_generator.batch_size))
+    print('class_indices: {0}'.format(train_generator.class_indices))
+    print('class_mode: {0}'.format(train_generator.class_mode))
+    print('classes: {0}'.format(train_generator.classes))
+    print('color_mode: {0}'.format(train_generator.color_mode))
+    print('data_format: {0}'.format(train_generator.data_format))
+    print('dir: {0}'.format(train_generator.directory))
+    print('image_shape: {0}'.format(train_generator.image_shape))
+    print('target_size: {0}'.format(train_generator.target_size))
+    print('total_batches_seen: {0}'.format(train_generator.total_batches_seen))
+
+    print('\n')
+
+    validation_generator = ImageDataGenerator(data_format="channels_last").flow_from_directory(
         validation_dir,
         target_size=(resize_dim[0], resize_dim[1]),
         batch_size=batch_size,
-        class_mode="categorical", # Not sure about this
-        shuffle=False,
-        save_to_dir=None)
+        class_mode='categorical')
+
+    print('\n')
+
+    print('batch_index: {0}'.format(validation_generator.batch_index))
+    print('batch_size: {0}'.format(validation_generator.batch_size))
+    print('class_indices: {0}'.format(validation_generator.class_indices))
+    print('class_mode: {0}'.format(validation_generator.class_mode))
+    print('classes: {0}'.format(validation_generator.classes))
+    print('color_mode: {0}'.format(validation_generator.color_mode))
+    print('data_format: {0}'.format(validation_generator.data_format))
+    print('dir: {0}'.format(validation_generator.directory))
+    print('image_shape: {0}'.format(validation_generator.image_shape))
+    print('target_size: {0}'.format(validation_generator.target_size))
+    print('total_batches_seen: {0}'.format(validation_generator.total_batches_seen))
+
+    print('\n')
+
+    x_batch, y_batch = next(train_generator)
+    for i in range (0, 32):
+        img = x_batch[i]
+        label = y_batch[i]
+
+    sys.exit()
 
     """
-    test_generator = datagen.flow_from_directory(
+    test_generator = ImageDataGenerator().flow_from_directory(
         test_dir,
         target_size=(resize_dim[0], resize_dim[1]),
         batch_size=batch_size,
@@ -107,15 +126,10 @@ else:
         save_to_dir=None)
     """
 
-    print('Printing the train_data files')
-    print(train_generator.filenames)
-
     # Take images from dir in batches
     model.fit_generator(train_generator,
                         steps_per_epoch=int(num_train_images/batch_size),
                         epochs=epochs,
-                        workers=4,
-                        use_multiprocessing=False,
                         validation_data=validation_generator,
                         validation_steps=int(num_validation_images/batch_size))
 
@@ -124,12 +138,10 @@ else:
 # Score trained model on validation data
 validation_scores = model.evaluate_generator(
                                   validation_generator,
-                                  steps=int(num_validation_images/batch_size),
-                                  workers=4,
-                                  use_multiprocessing=False)
+                                  steps=int(num_validation_images/batch_size))
 
 # Index is 0 because we have provided only one metric in model?! Not sure!
-print('Validation Output:', validation_scores)
+print('Validation Accuracy:', validation_scores[1])
 
 """
 # Score trained model on test data
