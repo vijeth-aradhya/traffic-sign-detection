@@ -47,11 +47,11 @@ model.add(Dense(num_classes))
 model.add(Activation('softmax'))
 
 # initiate RMSprop optimizer
-opt = keras.optimizers.rmsprop(lr=0.0001, decay=1e-6)
+opt = keras.optimizers.rmsprop(lr=0.00001, decay=1e-6)
 
 # Compile the model
 model.compile(loss='categorical_crossentropy',
-              optimizer='rmsprop',
+              optimizer=opt,
               metrics=['accuracy'])
 
 if not data_augmentation:
@@ -60,7 +60,7 @@ if not data_augmentation:
               batch_size=batch_size,
               epochs=epochs,
               validation_data=(x_test, y_test),
-              shuffle=True)
+              shuffle=False)
 else:
     print('Using real-time data augmentation.')
     # This will do preprocessing and realtime data augmentation:
@@ -69,7 +69,11 @@ else:
         train_dir,
         target_size=(resize_dim[0], resize_dim[1]), # Dimensions to which all the images will be resized
         batch_size=batch_size,
-        class_mode='categorical')
+        class_mode='categorical',
+        shuffle=True)
+
+    for i in range(0, 32):
+        print(train_generator.filenames[i])
 
     print('\n')
 
@@ -113,8 +117,7 @@ else:
     for i in range (0, 32):
         img = x_batch[i]
         label = y_batch[i]
-
-    sys.exit()
+        print(label)
 
     """
     test_generator = ImageDataGenerator().flow_from_directory(
@@ -129,9 +132,7 @@ else:
     # Take images from dir in batches
     model.fit_generator(train_generator,
                         steps_per_epoch=int(num_train_images/batch_size),
-                        epochs=epochs,
-                        validation_data=validation_generator,
-                        validation_steps=int(num_validation_images/batch_size))
+                        epochs=epochs)
 
 # Note we can do the score part of ourselves (predicing labels by taking img one by one
 
